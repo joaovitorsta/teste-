@@ -1,1 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 2026 Live Track Map & Simulator - Spa-Francorchamps</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
 
+        body {
+            background-color: #0b0e14;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #151922;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #222834;
+        }
+
+        .title-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .f1-badge {
+            background-color: #e10600;
+            color: #fff;
+            font-weight: 900;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #a0a5b5;
+        }
+
+        select, input, button {
+            background-color: #1f2633;
+            color: #fff;
+            border: 1px solid #323b4d;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        button {
+            background-color: #e10600;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #b80500;
+        }
+
+        button:disabled {
+            background-color: #444;
+            cursor: not-allowed;
+        }
+
+        .status-pill {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background-color: #2b9348;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(43, 147, 72, 0.4);
+        }
+
+        .status-pill.yellow {
+            background-color: #e0a96d;
+            color: #000;
+            box-shadow: 0 0 10px rgba(224, 169, 109, 0.4);
+        }
+
+        .status-pill.vsc {
+            background-color: #ff9f1c;
+            color: #000;
+            box-shadow: 0 0 10px rgba(255, 159, 28, 0.4);
+        }
+
+        .status-pill.sc {
+            background-color: #d62828;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(214, 40, 40, 0.6);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 60px);
+            background-color: #0b0e14;
+        }
+
+        .track-section {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #151c28 0%, #0b0e14 100%);
+            border-right: 2px solid #1f2633;
+        }
+
+        svg#spa-track {
+            width: 95%;
+            height: 95%;
+        }
+
+        .track-path-bg {
+            fill: none;
+            stroke: #1e2636;
+            stroke-width: 18;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .track-path-main {
+            fill: none;
+            stroke: #38455e;
+            stroke-width: 10;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .track-path-line {
+            fill: none;
+            stroke: #5a6e94;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .start-line {
+            stroke: #ffffff;
+            stroke-width: 4;
+        }
+
+        .sector-line {
+            stroke: #ff0055;
+            stroke-width: 3;
+        }
+
+        .driver-dot {
+            transition: all 0.1s linear;
+            cursor: pointer;
+        }
+
+        .driver-dot circle {
+            stroke: #ffffff;
+            stroke-width: 1.5px;
+        }
+
+        .driver-label {
+            font-size: 10px;
+            font-weight: 800;
+            fill: #ffffff;
+            text-anchor: middle;
+            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
+            pointer-events: none;
+        }
+
+        .sidebar {
+            width: 420px;
+            display: flex;
+            flex-direction: column;
+            background-color: #121620;
+        }
+
+        .leaderboard-header {
+            padding: 12px 16px;
+            background-color: #181e2b;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #222a3a;
+            display: flex;
+            justify-content: space-between;
+            color: #8f98a8;
+        }
+
+        .leaderboard-list {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #121620;
+        }
+
+        .driver-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-bottom: 1px solid #1a212e;
+            font-size: 13px;
+            height: 34px;
+        }
+
+        .driver-row.dnf {
+            opacity: 0.4;
+            background-color: rgba(255, 0, 0, 0.05);
+        }
+
+        .pos {
+            width: 24px;
+            font-weight: 700;
+            color: #8f98a8;
+            text-align: center;
+        }
+
+        .team-color-strip {
+            width: 4px;
+            height: 18px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+
+        .driver-code {
+            width: 45px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .driver-name {
+            flex: 1;
+            color: #c5cad6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gap-col {
+            width: 65px;
+            text-align: right;
+            font-weight: 600;
+            font-family: monospace;
+            color: #a0a5b5;
+        }
+
+        .status-col {
+            width: 50px;
+            text-align: right;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-col.out {
+            color: #ff4d4d;
+        }
+
+        .status-col.pit {
+            color: #ffb703;
+        }
+
+        .feed-section {
+            height: 220px;
+            border-top: 2px solid #222a3a;
+            background-color: #0e121a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feed-header {
+            padding: 8px 16px;
+            background-color: #151b26;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #8f98a8;
+            border-bottom: 1px solid #1f2736;
+        }
+
+        .feed-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .feed-item {
+            padding: 6px 10px;
+            border-radius: 4px;
+            background-color: #161c27;
+            border-left: 3px solid #5a6e94;
+            line-height: 1.3;
+        }
+
+        .feed-item.overtake {
+            border-left-color: #2b9348;
+        }
+
+        .feed-item.yellow {
+            border-left-color: #e0a96d;
+            background-color: rgba(224, 169, 109, 0.1);
+        }
+
+        .feed-item.vsc {
+            border-left-color: #ff9f1c;
+            background-color: rgba(255, 159, 28, 0.1);
+        }
+
+        .feed-item.sc {
+            border-left-color: #d62828;
+            background-color: rgba(214, 40, 40, 0.1);
+        }
+
+        .feed-item.crash {
+            border-left-color: #d62828;
+            font-weight: 600;
+        }
+
+        .feed-time {
+            color: #6c757d;
+            font-size: 10px;
+            margin-right: 6px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-area">
+            <span class="f1-badge">F1 2026</span>
+            <h1>Spa-Francorchamps Simulation</h1>
+        </div>
+        <div class="controls">
+            <div class="control-group">
+                <label for="laps-input">Voltas:</label>
+                <input type="number" id="laps-input" min="1" max="70" value="15" style="width: 60px;">
+            </div>
+            <div class="control-group">
+                <label for="speed-select">Velocidade:</label>
+                <select id="speed-select">
+                    <option value="1">1x</option>
+                    <option value="2" selected>2x</option>
+                    <option value="4">4x</option>
+                    <option value="8">8x</option>
+                </select>
+            </div>
+            <button id="btn-start">Iniciar Corrida</button>
+            <button id="btn-reset" style="background-color: #323b4d;">Resetar</button>
+            <div id="track-status" class="status-pill">Pista Livre</div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="track-section">
+            <svg id="spa-track" viewBox="0 0 900 600">
+                <path class="track-path-bg" id="track-bg" d="" />
+                <path class="track-path-main" id="track-main" d="" />
+                <path class="track-path-line" id="track-line" d="" />
+                
+                <line x1="450" y1="515" x2="450" y2="545" class="start-line" />
+                
+                <g id="drivers-layer"></g>
+            </svg>
+        </div>
+
+        <div class="sidebar">
+            <div class="leaderboard-header">
+                <span style="width: 24px;">POS</span>
+                <span style="flex:1; margin-left: 14px;">PILOTO</span>
+                <span style="width: 65px; text-align: right;">GAP</span>
+                <span style="width: 50px; text-align: right;">INT</span>
+            </div>
+            <div class="leaderboard-list" id="leaderboard"></div>
+            
+            <div class="feed-section">
+                <div class="feed-header">Registro da Corrida / Incidentes</div>
+                <div class="feed-list" id="feed-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const spaControlPoints = [
+            [450, 530], [300, 540], [180, 520], [210, 440], 
+            [320, 420], [390, 360], [560, 220], [720, 100], 
+            [780, 80],  [760, 40],  [660, 50],  [550, 80],  
+            [480, 150], [380, 190], [280, 240], [250, 310], 
+            [300, 370], [400, 400], [550, 430], [680, 450], 
+            [580, 490], [520, 470], [480, 530]
+        ];
+
+        function generateCatmullRomPath(pts, samplesPerSegment = 16) {
+            const n = pts.length;
+            let pathData = "";
+            let pointsArray = [];
+
+            for (let i = 0; i < n; i++) {
+                const p0 = pts[(i - 1 + n) % n];
+                const p1 = pts[i];
+                const p2 = pts[(i + 1) % n];
+                const p3 = pts[(i + 2) % n];
+
+                for (let tIdx = 0; tIdx < samplesPerSegment; tIdx++) {
+                    const t = tIdx / samplesPerSegment;
+                    const t2 = t * t;
+                    const t3 = t2 * t;
+
+                    const x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
+                    const y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
+
+                    pointsArray.push({ x, y });
+
+                    if (i === 0 && tIdx === 0) {
+                        pathData += `M ${x} ${y}`;
+                    } else {
+                        pathData += ` L ${x} ${y}`;
+                    }
+                }
+            }
+            pathData += " Z";
+            return { pathData, pointsArray };
+        }
+
+        const { pathData, pointsArray: trackPoints } = generateCatmullRomPath(spaControlPoints, 16);
+        const totalPathPoints = trackPoints.length;
+
+        document.getElementById('track-bg').setAttribute('d', pathData);
+        document.getElementById('track-main').setAttribute('d', pathData);
+        document.getElementById('track-line').setAttribute('d', pathData);
+
+        const grid2026 = [
+            { id: 1, name: "Max Verstappen", code: "VER", team: "Red Bull Racing", color: "#3671C6", skill: 98, aggression: 85 },
+            { id: 2, name: "Isack Hadjar", code: "HAD", team: "Red Bull Racing", color: "#3671C6", skill: 84, aggression: 78 },
+            { id: 3, name: "Lando Norris", code: "NOR", team: "McLaren", color: "#FF8000", skill: 95, aggression: 80 },
+            { id: 4, name: "Oscar Piastri", code: "PIA", team: "McLaren", color: "#FF8000", skill: 92, aggression: 75 },
+            { id: 5, name: "George Russell", code: "RUS", team: "Mercedes", color: "#6CD3BF", skill: 93, aggression: 82 },
+            { id: 6, name: "Kimi Antonelli", code: "ANT", team: "Mercedes", color: "#6CD3BF", skill: 86, aggression: 84 },
+            { id: 7, name: "Charles Leclerc", code: "LEC", team: "Ferrari", color: "#F80000", skill: 96, aggression: 86 },
+            { id: 8, name: "Lewis Hamilton", code: "HAM", team: "Ferrari", color: "#F80000", skill: 97, aggression: 79 },
+            { id: 9, name: "Fernando Alonso", code: "ALO", team: "Aston Martin", color: "#229971", skill: 94, aggression: 88 },
+            { id: 10, name: "Lance Stroll", code: "STR", team: "Aston Martin", color: "#229971", skill: 80, aggression: 70 },
+            { id: 11, name: "Pierre Gasly", code: "GAS", team: "Alpine", color: "#009325", skill: 87, aggression: 76 },
+            { id: 12, name: "Franco Colapinto", code: "COL", team: "Alpine", color: "#009325", skill: 83, aggression: 81 },
+            { id: 13, name: "Liam Lawson", code: "LAW", team: "Racing Bulls", color: "#6692FF", skill: 84, aggression: 83 },
+            { id: 14, name: "Arvid Lindblad", code: "LIN", team: "Racing Bulls", color: "#6692FF", skill: 82, aggression: 80 },
+            { id: 15, name: "Alexander Albon", code: "ALB", team: "Williams", color: "#64C4FF", skill: 88, aggression: 74 },
+            { id: 16, name: "Carlos Sainz", code: "SAI", team: "Williams", color: "#64C4FF", skill: 91, aggression: 77 },
+            { id: 17, name: "Esteban Ocon", code: "OCO", team: "Haas", color: "#B6BABD", skill: 86, aggression: 85 },
+            { id: 18, name: "Oliver Bearman", code: "BEA", team: "Haas", color: "#B6BABD", skill: 84, aggression: 79 },
+            { id: 19, name: "Gabriel Bortoleto", code: "BOR", team: "Audi", color: "#C00000", skill: 85, aggression: 78 },
+            { id: 20, name: "Nico Hülkenberg", code: "HUL", team: "Audi", color: "#C00000", skill: 87, aggression: 72 },
+            { id: 21, name: "Sergio Pérez", code: "PER", team: "Cadillac", color: "#FFD700", skill: 86, aggression: 75 },
+            { id: 22, name: "Valtteri Bottas", code: "BOT", team: "Cadillac", color: "#FFD700", skill: 86, aggression: 70 }
+        ];
+
+        let drivers = [];
+        let simulationRunning = false;
+        let animationFrameId = null;
+        let totalLaps = 15;
+        let simSpeed = 2;
+        let trackStatus = "CLEAR"; 
+        let statusTimer = 0;
+        let raceFinished = false;
+        let safetyCarProgress = 0;
+
+        const driversLayer = document.getElementById('drivers-layer');
+        const leaderboardEl = document.getElementById('leaderboard');
+        const feedListEl = document.getElementById('feed-list');
+        const statusPill = document.getElementById('track-status');
+        const btnStart = document.getElementById('btn-start');
+        const btnReset = document.getElementById('btn-reset');
+        const lapsInput = document.getElementById('laps-input');
+        const speedSelect = document.getElementById('speed-select');
+
+        function initSimulation() {
+            driversLayer.innerHTML = '';
+            leaderboardEl.innerHTML = '';
+            feedListEl.innerHTML = '';
+            
+            totalLaps = parseInt(lapsInput.value) || 15;
+            trackStatus = "CLEAR";
+            updateStatusUI();
+            raceFinished = false;
+
+            drivers = grid2026.map((d, index) => {
+                const initialProgress = totalPathPoints - (index * 6);
+                
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'driver-dot');
+                group.setAttribute('id', `driver-dot-${d.id}`);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', '7');
+                circle.setAttribute('fill', d.color);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('class', 'driver-label');
+                text.setAttribute('dy', '16');
+                text.textContent = d.code;
+
+                group.appendChild(circle);
+                group.appendChild(text);
+                driversLayer.appendChild(group);
+
+                return {
+                    ...d,
+                    progress: initialProgress,
+                    lap: 1,
+                    distanceTotal: initialProgress,
+                    speed: 0.85 + (d.skill / 1000) + (Math.random() * 0.04),
+                    baseSpeed: 0.85 + (d.skill / 1000),
+                    isDNF: false,
+                    lastPos: index + 1,
+                    element: group
+                };
+            });
+
+            updatePositions();
+            renderLeaderboard();
+            addFeedItem("Sinais vermelhos acesos... A corrida foi inicializada!", "normal");
+        }
+
+        function updateStatusUI() {
+            statusPill.className = "status-pill";
+            if (trackStatus === "CLEAR") {
+                statusPill.textContent = "Pista Livre";
+            } else if (trackStatus === "YELLOW") {
+                statusPill.textContent = "Bandeira Amarela";
+                statusPill.classList.add("yellow");
+            } else if (trackStatus === "VSC") {
+                statusPill.textContent = "VSC";
+                statusPill.classList.add("vsc");
+            } else if (trackStatus === "SC") {
+                statusPill.textContent = "Safety Car";
+                statusPill.classList.add("sc");
+            }
+        }
+
+        function addFeedItem(text, type = "normal") {
+            const item = document.createElement('div');
+            item.className = `feed-item ${type}`;
+            
+            const time = document.createElement('span');
+            time.className = 'feed-time';
+            const leaderLap = drivers.length ? Math.max(...drivers.map(d => d.lap)) : 1;
+            time.textContent = `V${Math.min(leaderLap, totalLaps)}`;
+
+            item.appendChild(time);
+            item.appendChild(document.createTextNode(text));
+
+            feedListEl.insertBefore(item, feedListEl.firstChild);
+        }
+
+        function updatePositions() {
+            drivers.sort((a, b) => {
+                if (a.isDNF && !b.isDNF) return 1;
+                if (!a.isDNF &
