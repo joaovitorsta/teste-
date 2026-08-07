@@ -88,11 +88,6 @@
             background-color: #b80500;
         }
 
-        button:disabled {
-            background-color: #444;
-            cursor: not-allowed;
-        }
-
         .status-pill {
             padding: 6px 16px;
             border-radius: 20px;
@@ -175,13 +170,8 @@
             stroke-width: 4;
         }
 
-        .sector-line {
-            stroke: #ff0055;
-            stroke-width: 3;
-        }
-
         .driver-dot {
-            transition: all 0.1s linear;
+            transition: transform 0.05s linear;
             cursor: pointer;
         }
 
@@ -195,12 +185,12 @@
             font-weight: 800;
             fill: #ffffff;
             text-anchor: middle;
-            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
+            text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
             pointer-events: none;
         }
 
         .sidebar {
-            width: 420px;
+            width: 450px;
             display: flex;
             flex-direction: column;
             background-color: #121620;
@@ -209,13 +199,12 @@
         .leaderboard-header {
             padding: 12px 16px;
             background-color: #181e2b;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 1px solid #222a3a;
             display: flex;
-            justify-content: space-between;
             color: #8f98a8;
         }
 
@@ -230,13 +219,13 @@
             align-items: center;
             padding: 6px 12px;
             border-bottom: 1px solid #1a212e;
-            font-size: 13px;
-            height: 34px;
+            font-size: 12px;
+            height: 36px;
         }
 
         .driver-row.dnf {
             opacity: 0.4;
-            background-color: rgba(255, 0, 0, 0.05);
+            background-color: rgba(255, 0, 0, 0.08);
         }
 
         .pos {
@@ -250,11 +239,11 @@
             width: 4px;
             height: 18px;
             border-radius: 2px;
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         .driver-code {
-            width: 45px;
+            width: 40px;
             font-weight: 800;
             letter-spacing: 0.5px;
         }
@@ -267,8 +256,21 @@
             text-overflow: ellipsis;
         }
 
-        .gap-col {
-            width: 65px;
+        .tire-badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin-right: 6px;
+            text-align: center;
+            width: 18px;
+        }
+        .tire-S { background: #e10600; color: #fff; }
+        .tire-M { background: #ffd000; color: #000; }
+        .tire-H { background: #ffffff; color: #000; }
+
+        .gap-col, .int-col {
+            width: 55px;
             text-align: right;
             font-weight: 600;
             font-family: monospace;
@@ -276,22 +278,17 @@
         }
 
         .status-col {
-            width: 50px;
+            width: 45px;
             text-align: right;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
         }
 
-        .status-col.out {
-            color: #ff4d4d;
-        }
-
-        .status-col.pit {
-            color: #ffb703;
-        }
+        .status-col.out { color: #ff4d4d; }
+        .status-col.pit { color: #ffb703; }
 
         .feed-section {
-            height: 220px;
+            height: 200px;
             border-top: 2px solid #222a3a;
             background-color: #0e121a;
             display: flex;
@@ -301,7 +298,7 @@
         .feed-header {
             padding: 8px 16px;
             background-color: #151b26;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             color: #8f98a8;
@@ -319,36 +316,19 @@
         }
 
         .feed-item {
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 4px;
             background-color: #161c27;
             border-left: 3px solid #5a6e94;
             line-height: 1.3;
         }
 
-        .feed-item.overtake {
-            border-left-color: #2b9348;
-        }
-
-        .feed-item.yellow {
-            border-left-color: #e0a96d;
-            background-color: rgba(224, 169, 109, 0.1);
-        }
-
-        .feed-item.vsc {
-            border-left-color: #ff9f1c;
-            background-color: rgba(255, 159, 28, 0.1);
-        }
-
-        .feed-item.sc {
-            border-left-color: #d62828;
-            background-color: rgba(214, 40, 40, 0.1);
-        }
-
-        .feed-item.crash {
-            border-left-color: #d62828;
-            font-weight: 600;
-        }
+        .feed-item.overtake { border-left-color: #2b9348; }
+        .feed-item.pit { border-left-color: #ffb703; }
+        .feed-item.yellow { border-left-color: #e0a96d; background: rgba(224, 169, 109, 0.1); }
+        .feed-item.vsc { border-left-color: #ff9f1c; background: rgba(255, 159, 28, 0.1); }
+        .feed-item.sc { border-left-color: #d62828; background: rgba(214, 40, 40, 0.1); }
+        .feed-item.crash { border-left-color: #d62828; font-weight: 600; }
 
         .feed-time {
             color: #6c757d;
@@ -363,12 +343,12 @@
     <header>
         <div class="title-area">
             <span class="f1-badge">F1 2026</span>
-            <h1>Spa-Francorchamps Simulation</h1>
+            <h1>Spa-Francorchamps Live Telemetry</h1>
         </div>
         <div class="controls">
             <div class="control-group">
                 <label for="laps-input">Voltas:</label>
-                <input type="number" id="laps-input" min="1" max="70" value="15" style="width: 60px;">
+                <input type="number" id="laps-input" min="1" max="70" value="15" style="width: 55px;">
             </div>
             <div class="control-group">
                 <label for="speed-select">Velocidade:</label>
@@ -377,6 +357,13 @@
                     <option value="2" selected>2x</option>
                     <option value="4">4x</option>
                     <option value="8">8x</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="weather-select">Clima:</label>
+                <select id="weather-select">
+                    <option value="DRY">☀️ Seco</option>
+                    <option value="WET">🌧️ Chuva</option>
                 </select>
             </div>
             <button id="btn-start">Iniciar Corrida</button>
@@ -391,9 +378,7 @@
                 <path class="track-path-bg" id="track-bg" d="" />
                 <path class="track-path-main" id="track-main" d="" />
                 <path class="track-path-line" id="track-line" d="" />
-                
                 <line x1="450" y1="515" x2="450" y2="545" class="start-line" />
-                
                 <g id="drivers-layer"></g>
             </svg>
         </div>
@@ -401,14 +386,16 @@
         <div class="sidebar">
             <div class="leaderboard-header">
                 <span style="width: 24px;">POS</span>
-                <span style="flex:1; margin-left: 14px;">PILOTO</span>
-                <span style="width: 65px; text-align: right;">GAP</span>
-                <span style="width: 50px; text-align: right;">INT</span>
+                <span style="flex:1; margin-left: 12px;">PILOTO</span>
+                <span style="width: 24px;">PNEU</span>
+                <span style="width: 55px; text-align: right;">GAP</span>
+                <span style="width: 55px; text-align: right;">INT</span>
+                <span style="width: 45px; text-align: right;">ST</span>
             </div>
             <div class="leaderboard-list" id="leaderboard"></div>
             
             <div class="feed-section">
-                <div class="feed-header">Registro da Corrida / Incidentes</div>
+                <div class="feed-header">Telemetria & Eventos da Corrida</div>
                 <div class="feed-list" id="feed-list"></div>
             </div>
         </div>
@@ -424,7 +411,7 @@
             [580, 490], [520, 470], [480, 530]
         ];
 
-        function generateCatmullRomPath(pts, samplesPerSegment = 16) {
+        function generateCatmullRomPath(pts, samplesPerSegment = 20) {
             const n = pts.length;
             let pathData = "";
             let pointsArray = [];
@@ -445,18 +432,15 @@
 
                     pointsArray.push({ x, y });
 
-                    if (i === 0 && tIdx === 0) {
-                        pathData += `M ${x} ${y}`;
-                    } else {
-                        pathData += ` L ${x} ${y}`;
-                    }
+                    if (i === 0 && tIdx === 0) pathData += `M ${x} ${y}`;
+                    else pathData += ` L ${x} ${y}`;
                 }
             }
             pathData += " Z";
             return { pathData, pointsArray };
         }
 
-        const { pathData, pointsArray: trackPoints } = generateCatmullRomPath(spaControlPoints, 16);
+        const { pathData, pointsArray: trackPoints } = generateCatmullRomPath(spaControlPoints, 20);
         const totalPathPoints = trackPoints.length;
 
         document.getElementById('track-bg').setAttribute('d', pathData);
@@ -464,39 +448,37 @@
         document.getElementById('track-line').setAttribute('d', pathData);
 
         const grid2026 = [
-            { id: 1, name: "Max Verstappen", code: "VER", team: "Red Bull Racing", color: "#3671C6", skill: 98, aggression: 85 },
-            { id: 2, name: "Isack Hadjar", code: "HAD", team: "Red Bull Racing", color: "#3671C6", skill: 84, aggression: 78 },
-            { id: 3, name: "Lando Norris", code: "NOR", team: "McLaren", color: "#FF8000", skill: 95, aggression: 80 },
-            { id: 4, name: "Oscar Piastri", code: "PIA", team: "McLaren", color: "#FF8000", skill: 92, aggression: 75 },
-            { id: 5, name: "George Russell", code: "RUS", team: "Mercedes", color: "#6CD3BF", skill: 93, aggression: 82 },
-            { id: 6, name: "Kimi Antonelli", code: "ANT", team: "Mercedes", color: "#6CD3BF", skill: 86, aggression: 84 },
-            { id: 7, name: "Charles Leclerc", code: "LEC", team: "Ferrari", color: "#F80000", skill: 96, aggression: 86 },
-            { id: 8, name: "Lewis Hamilton", code: "HAM", team: "Ferrari", color: "#F80000", skill: 97, aggression: 79 },
-            { id: 9, name: "Fernando Alonso", code: "ALO", team: "Aston Martin", color: "#229971", skill: 94, aggression: 88 },
-            { id: 10, name: "Lance Stroll", code: "STR", team: "Aston Martin", color: "#229971", skill: 80, aggression: 70 },
-            { id: 11, name: "Pierre Gasly", code: "GAS", team: "Alpine", color: "#009325", skill: 87, aggression: 76 },
-            { id: 12, name: "Franco Colapinto", code: "COL", team: "Alpine", color: "#009325", skill: 83, aggression: 81 },
-            { id: 13, name: "Liam Lawson", code: "LAW", team: "Racing Bulls", color: "#6692FF", skill: 84, aggression: 83 },
-            { id: 14, name: "Arvid Lindblad", code: "LIN", team: "Racing Bulls", color: "#6692FF", skill: 82, aggression: 80 },
-            { id: 15, name: "Alexander Albon", code: "ALB", team: "Williams", color: "#64C4FF", skill: 88, aggression: 74 },
-            { id: 16, name: "Carlos Sainz", code: "SAI", team: "Williams", color: "#64C4FF", skill: 91, aggression: 77 },
-            { id: 17, name: "Esteban Ocon", code: "OCO", team: "Haas", color: "#B6BABD", skill: 86, aggression: 85 },
-            { id: 18, name: "Oliver Bearman", code: "BEA", team: "Haas", color: "#B6BABD", skill: 84, aggression: 79 },
-            { id: 19, name: "Gabriel Bortoleto", code: "BOR", team: "Audi", color: "#C00000", skill: 85, aggression: 78 },
-            { id: 20, name: "Nico Hülkenberg", code: "HUL", team: "Audi", color: "#C00000", skill: 87, aggression: 72 },
-            { id: 21, name: "Sergio Pérez", code: "PER", team: "Cadillac", color: "#FFD700", skill: 86, aggression: 75 },
-            { id: 22, name: "Valtteri Bottas", code: "BOT", team: "Cadillac", color: "#FFD700", skill: 86, aggression: 70 }
+            { id: 1, name: "Max Verstappen", code: "VER", team: "Red Bull", color: "#3671C6", skill: 98 },
+            { id: 2, name: "Isack Hadjar", code: "HAD", team: "Red Bull", color: "#3671C6", skill: 84 },
+            { id: 3, name: "Lando Norris", code: "NOR", team: "McLaren", color: "#FF8000", skill: 95 },
+            { id: 4, name: "Oscar Piastri", code: "PIA", team: "McLaren", color: "#FF8000", skill: 92 },
+            { id: 5, name: "George Russell", code: "RUS", team: "Mercedes", color: "#6CD3BF", skill: 93 },
+            { id: 6, name: "Kimi Antonelli", code: "ANT", team: "Mercedes", color: "#6CD3BF", skill: 86 },
+            { id: 7, name: "Charles Leclerc", code: "LEC", team: "Ferrari", color: "#F80000", skill: 96 },
+            { id: 8, name: "Lewis Hamilton", code: "HAM", team: "Ferrari", color: "#F80000", skill: 97 },
+            { id: 9, name: "Fernando Alonso", code: "ALO", team: "Aston Martin", color: "#229971", skill: 94 },
+            { id: 10, name: "Lance Stroll", code: "STR", team: "Aston Martin", color: "#229971", skill: 80 },
+            { id: 11, name: "Pierre Gasly", code: "GAS", team: "Alpine", color: "#009325", skill: 87 },
+            { id: 12, name: "Franco Colapinto", code: "COL", team: "Alpine", color: "#009325", skill: 83 },
+            { id: 13, name: "Liam Lawson", code: "LAW", team: "Racing Bulls", color: "#6692FF", skill: 84 },
+            { id: 14, name: "Arvid Lindblad", code: "LIN", team: "Racing Bulls", color: "#6692FF", skill: 82 },
+            { id: 15, name: "Alexander Albon", code: "ALB", team: "Williams", color: "#64C4FF", skill: 88 },
+            { id: 16, name: "Carlos Sainz", code: "SAI", team: "Williams", color: "#64C4FF", skill: 91 },
+            { id: 17, name: "Esteban Ocon", code: "OCO", team: "Haas", color: "#B6BABD", skill: 86 },
+            { id: 18, name: "Oliver Bearman", code: "BEA", team: "Haas", color: "#B6BABD", skill: 84 },
+            { id: 19, name: "Gabriel Bortoleto", code: "BOR", team: "Audi", color: "#C00000", skill: 85 },
+            { id: 20, name: "Nico Hülkenberg", code: "HUL", team: "Audi", color: "#C00000", skill: 87 },
+            { id: 21, name: "Sergio Pérez", code: "PER", team: "Cadillac", color: "#FFD700", skill: 86 },
+            { id: 22, name: "Valtteri Bottas", code: "BOT", team: "Cadillac", color: "#FFD700", skill: 86 }
         ];
 
         let drivers = [];
         let simulationRunning = false;
-        let animationFrameId = null;
         let totalLaps = 15;
         let simSpeed = 2;
         let trackStatus = "CLEAR"; 
         let statusTimer = 0;
         let raceFinished = false;
-        let safetyCarProgress = 0;
 
         const driversLayer = document.getElementById('drivers-layer');
         const leaderboardEl = document.getElementById('leaderboard');
@@ -506,6 +488,7 @@
         const btnReset = document.getElementById('btn-reset');
         const lapsInput = document.getElementById('laps-input');
         const speedSelect = document.getElementById('speed-select');
+        const weatherSelect = document.getElementById('weather-select');
 
         function initSimulation() {
             driversLayer.innerHTML = '';
@@ -517,8 +500,10 @@
             updateStatusUI();
             raceFinished = false;
 
+            const compounds = ['S', 'M', 'H'];
+
             drivers = grid2026.map((d, index) => {
-                const initialProgress = totalPathPoints - (index * 6);
+                const initialProgress = totalPathPoints - (index * 8);
                 
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 group.setAttribute('class', 'driver-dot');
@@ -530,7 +515,7 @@
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('class', 'driver-label');
-                text.setAttribute('dy', '16');
+                text.setAttribute('dy', '15');
                 text.textContent = d.code;
 
                 group.appendChild(circle);
@@ -539,11 +524,15 @@
 
                 return {
                     ...d,
-                    progress: initialProgress,
+                    progress: (initialProgress + totalPathPoints) % totalPathPoints,
                     lap: 1,
                     distanceTotal: initialProgress,
-                    speed: 0.85 + (d.skill / 1000) + (Math.random() * 0.04),
                     baseSpeed: 0.85 + (d.skill / 1000),
+                    tire: compounds[Math.floor(Math.random() * compounds.length)],
+                    tireLife: 100,
+                    pitStops: 0,
+                    isPit: false,
+                    pitTimer: 0,
                     isDNF: false,
                     lastPos: index + 1,
                     element: group
@@ -552,7 +541,7 @@
 
             updatePositions();
             renderLeaderboard();
-            addFeedItem("Sinais vermelhos acesos... A corrida foi inicializada!", "normal");
+            addFeedItem("Luzes apagadas! A corrida começou em Spa-Francorchamps!", "normal");
         }
 
         function updateStatusUI() {
@@ -563,7 +552,7 @@
                 statusPill.textContent = "Bandeira Amarela";
                 statusPill.classList.add("yellow");
             } else if (trackStatus === "VSC") {
-                statusPill.textContent = "VSC";
+                statusPill.textContent = "Virtual Safety Car";
                 statusPill.classList.add("vsc");
             } else if (trackStatus === "SC") {
                 statusPill.textContent = "Safety Car";
@@ -589,4 +578,202 @@
         function updatePositions() {
             drivers.sort((a, b) => {
                 if (a.isDNF && !b.isDNF) return 1;
-                if (!a.isDNF &
+                if (!a.isDNF && b.isDNF) return -1;
+                return b.distanceTotal - a.distanceTotal;
+            });
+        }
+
+        function renderLeaderboard() {
+            leaderboardEl.innerHTML = '';
+            const leaderDist = drivers[0].distanceTotal;
+
+            drivers.forEach((d, idx) => {
+                const row = document.createElement('div');
+                row.className = `driver-row ${d.isDNF ? 'dnf' : ''}`;
+
+                let gapText = "LEADER";
+                let intText = "—";
+
+                if (idx > 0 && !d.isDNF) {
+                    const gapDist = (leaderDist - d.distanceTotal) * 0.05;
+                    const intDist = (drivers[idx - 1].distanceTotal - d.distanceTotal) * 0.05;
+                    gapText = `+${gapDist.toFixed(1)}s`;
+                    intText = `+${intDist.toFixed(1)}s`;
+                }
+
+                let statusHtml = "OK";
+                if (d.isDNF) statusHtml = `<span class="status-col out">OUT</span>`;
+                else if (d.isPit) statusHtml = `<span class="status-col pit">PIT</span>`;
+                else statusHtml = `<span class="status-col">${statusHtml}</span>`;
+
+                row.innerHTML = `
+                    <div class="pos">${idx + 1}</div>
+                    <div class="team-color-strip" style="background-color: ${d.color}"></div>
+                    <div class="driver-code">${d.code}</div>
+                    <div class="driver-name">${d.name}</div>
+                    <div class="tire-badge tire-${d.tire}">${d.tire}</div>
+                    <div class="gap-col">${d.isDNF ? 'DNF' : gapText}</div>
+                    <div class="int-col">${d.isDNF ? '-' : intText}</div>
+                    ${statusHtml}
+                `;
+                leaderboardEl.appendChild(row);
+            });
+        }
+
+        function triggerRandomEvent() {
+            if (trackStatus !== "CLEAR" || raceFinished) return;
+            
+            const rand = Math.random();
+            if (rand < 0.003) { // 0.3% de chance por frame
+                const activeDrivers = drivers.filter(d => !d.isDNF);
+                if (activeDrivers.length > 5) {
+                    const victim = activeDrivers[Math.floor(Math.random() * activeDrivers.length)];
+                    victim.isDNF = true;
+                    
+                    const incidentRand = Math.random();
+                    if (incidentRand < 0.5) {
+                        trackStatus = "SC";
+                        statusTimer = 250;
+                        addFeedItem(`ACIDENTE! ${victim.name} bateu. Safety Car acionado!`, "sc");
+                    } else {
+                        trackStatus = "VSC";
+                        statusTimer = 150;
+                        addFeedItem(`Incidente com ${victim.name}. Virtual Safety Car!`, "vsc");
+                    }
+                    updateStatusUI();
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!simulationRunning) return;
+
+            simSpeed = parseFloat(speedSelect.value);
+            const isWet = weatherSelect.value === "WET";
+
+            if (statusTimer > 0) {
+                statusTimer -= 1 * simSpeed;
+                if (statusTimer <= 0) {
+                    trackStatus = "CLEAR";
+                    updateStatusUI();
+                    addFeedItem("Bandeira Verde! Pista liberada.", "normal");
+                }
+            } else {
+                triggerRandomEvent();
+            }
+
+            let leaderFinished = false;
+
+            drivers.forEach(d => {
+                if (d.isDNF) return;
+
+                // Lógica de Pit Stop
+                if (d.isPit) {
+                    d.pitTimer -= 1 * simSpeed;
+                    if (d.pitTimer <= 0) {
+                        d.isPit = false;
+                        d.tireLife = 100;
+                        d.pitStops++;
+                        const compounds = ['S', 'M', 'H'].filter(c => c !== d.tire);
+                        d.tire = compounds[Math.floor(Math.random() * compounds.length)];
+                        addFeedItem(`${d.code} realizou pit stop e colocou pneus ${d.tire}.`, "pit");
+                    }
+                    return;
+                }
+
+                // Cálculo de velocidade
+                let currentSpeed = d.baseSpeed;
+                
+                // Desgaste de pneu
+                d.tireLife -= 0.02 * simSpeed;
+                if (d.tireLife < 30 && Math.random() < 0.05 && !d.isPit) {
+                    d.isPit = true;
+                    d.pitTimer = 80; // Duração do pit stop em frames
+                }
+
+                currentSpeed *= (0.85 + (d.tireLife / 200));
+
+                if (isWet) currentSpeed *= 0.75;
+
+                // Restrições de velocidade por bandeiras
+                if (trackStatus === "SC") currentSpeed *= 0.4;
+                if (trackStatus === "VSC") currentSpeed *= 0.6;
+
+                // Avanço na pista
+                d.progress += currentSpeed * simSpeed;
+                d.distanceTotal += currentSpeed * simSpeed;
+
+                // Troca de volta
+                if (d.progress >= totalPathPoints) {
+                    d.progress %= totalPathPoints;
+                    d.lap++;
+
+                    if (d.lap > totalLaps) {
+                        leaderFinished = true;
+                    }
+                }
+
+                // Renderizar posição SVG
+                const pointIndex = Math.floor(d.progress) % totalPathPoints;
+                const pt = trackPoints[pointIndex];
+                if (pt) {
+                    d.element.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+                }
+            });
+
+            // Lógica de ultrapassagem e atualização de posições
+            const oldOrder = [...drivers];
+            updatePositions();
+
+            drivers.forEach((d, newPos) => {
+                const oldPos = oldOrder.findIndex(o => o.id === d.id);
+                if (oldPos > newPos && !d.isDNF && oldPos !== -1) {
+                    addFeedItem(`${d.code} ultrapassou ${oldOrder[newPos].code} e assumiu P${newPos + 1}!`, "overtake");
+                }
+            });
+
+            renderLeaderboard();
+
+            if (leaderFinished || drivers.every(d => d.isDNF)) {
+                simulationRunning = false;
+                raceFinished = true;
+                btnStart.textContent = "Corrida Finalizada";
+                btnStart.disabled = true;
+                addFeedItem(`BANDEIRA A QUADROS! Vencedor: ${drivers[0].name}!`, "normal");
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Eventos dos Botões
+        btnStart.addEventListener('click', () => {
+            if (raceFinished) return;
+
+            simulationRunning = !simulationRunning;
+            if (simulationRunning) {
+                btnStart.textContent = "Pausar";
+                btnStart.style.backgroundColor = "#ffb703";
+                btnStart.style.color = "#000";
+                requestAnimationFrame(gameLoop);
+            } else {
+                btnStart.textContent = "Continuar";
+                btnStart.style.backgroundColor = "#e10600";
+                btnStart.style.color = "#fff";
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            simulationRunning = false;
+            btnStart.textContent = "Iniciar Corrida";
+            btnStart.style.backgroundColor = "#e10600";
+            btnStart.style.color = "#fff";
+            btnStart.disabled = false;
+            initSimulation();
+        });
+
+        // Inicializar aplicação
+        initSimulation();
+    </script>
+</body>
+</html>
