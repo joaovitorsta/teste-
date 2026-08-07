@@ -343,7 +343,7 @@
     <header>
         <div class="title-area">
             <span class="f1-badge">F1 2026</span>
-            <h1>Spa-Francorchamps Live Telemetry</h1>
+            <h1>Spa-Francorchamps Circuit (1m37s / Volta)</h1>
         </div>
         <div class="controls">
             <div class="control-group">
@@ -353,8 +353,8 @@
             <div class="control-group">
                 <label for="speed-select">Velocidade:</label>
                 <select id="speed-select">
-                    <option value="1">1x</option>
-                    <option value="2" selected>2x</option>
+                    <option value="1" selected>1x (Real)</option>
+                    <option value="2">2x</option>
                     <option value="4">4x</option>
                     <option value="8">8x</option>
                 </select>
@@ -378,7 +378,7 @@
                 <path class="track-path-bg" id="track-bg" d="" />
                 <path class="track-path-main" id="track-main" d="" />
                 <path class="track-path-line" id="track-line" d="" />
-                <line x1="450" y1="515" x2="450" y2="545" class="start-line" />
+                <line x1="330" y1="475" x2="330" y2="505" class="start-line" />
                 <g id="drivers-layer"></g>
             </svg>
         </div>
@@ -402,16 +402,33 @@
     </div>
 
     <script>
+        // Traçado Autêntico de Spa-Francorchamps (Fiel à Geometria Real)
         const spaControlPoints = [
-            [450, 530], [300, 540], [180, 520], [210, 440], 
-            [320, 420], [390, 360], [560, 220], [720, 100], 
-            [780, 80],  [760, 40],  [660, 50],  [550, 80],  
-            [480, 150], [380, 190], [280, 240], [250, 310], 
-            [300, 370], [400, 400], [550, 430], [680, 450], 
-            [580, 490], [520, 470], [480, 530]
+            [330, 490], // Linha de Chegada
+            [460, 490], // Reta Principal
+            [500, 520], // La Source (Hairpin T1)
+            [440, 450], // Saída da La Source
+            [460, 390], // Eau Rouge
+            [500, 340], // Subida do Raidillon
+            [760, 160], // Reta de Kemmel
+            [790, 130], // Entrada Les Combes (T5)
+            [760, 90],  // Chicane Les Combes
+            [700, 110], // Malmedy
+            [600, 180], // Hairpin de Bruxelles (Rivage)
+            [540, 220], // Speaker's Corner
+            [420, 260], // Pouhon (Entrada da Dupla Esquerda)
+            [330, 300], // Pouhon (Saída)
+            [280, 360], // Fagnes
+            [320, 410], // Entrada Stavelot
+            [380, 410], // Curva Paul Frère / Saída Stavelot
+            [260, 470], // Blanchimont 1
+            [160, 500], // Blanchimont 2 (Alta Velocidade)
+            [230, 520], // Entrada Chicane Bus Stop
+            [260, 485], // Saída Bus Stop
+            [290, 490]  // Retorno Reta Pit
         ];
 
-        function generateCatmullRomPath(pts, samplesPerSegment = 20) {
+        function generateCatmullRomPath(pts, samplesPerSegment = 30) {
             const n = pts.length;
             let pathData = "";
             let pointsArray = [];
@@ -440,7 +457,7 @@
             return { pathData, pointsArray };
         }
 
-        const { pathData, pointsArray: trackPoints } = generateCatmullRomPath(spaControlPoints, 20);
+        const { pathData, pointsArray: trackPoints } = generateCatmullRomPath(spaControlPoints, 30);
         const totalPathPoints = trackPoints.length;
 
         document.getElementById('track-bg').setAttribute('d', pathData);
@@ -465,7 +482,7 @@
             { id: 15, name: "Alexander Albon", code: "ALB", team: "Williams", color: "#64C4FF", skill: 88 },
             { id: 16, name: "Carlos Sainz", code: "SAI", team: "Williams", color: "#64C4FF", skill: 91 },
             { id: 17, name: "Esteban Ocon", code: "OCO", team: "Haas", color: "#B6BABD", skill: 86 },
-            { id: 18, name: "Oliver Bearman", code: "BEA", team: "Haas", color: "#B6BABD", skill: 84 },
+            { id: 18, name: "Oliver Bearman", code: "BEA", team: "Haas", color: "#B6BABD", skill: 79 },
             { id: 19, name: "Gabriel Bortoleto", code: "BOR", team: "Audi", color: "#C00000", skill: 85 },
             { id: 20, name: "Nico Hülkenberg", code: "HUL", team: "Audi", color: "#C00000", skill: 87 },
             { id: 21, name: "Sergio Pérez", code: "PER", team: "Cadillac", color: "#FFD700", skill: 86 },
@@ -475,10 +492,14 @@
         let drivers = [];
         let simulationRunning = false;
         let totalLaps = 15;
-        let simSpeed = 2;
+        let simSpeed = 1;
         let trackStatus = "CLEAR"; 
         let statusTimer = 0;
         let raceFinished = false;
+        let lastTime = 0;
+
+        // Tempo de Volta Alvo: 97 segundos (1 min e 37 seg) para 100% da pista
+        const BASE_LAP_TIME_SECONDS = 97.0; 
 
         const driversLayer = document.getElementById('drivers-layer');
         const leaderboardEl = document.getElementById('leaderboard');
@@ -503,7 +524,9 @@
             const compounds = ['S', 'M', 'H'];
 
             drivers = grid2026.map((d, index) => {
-                const initialProgress = totalPathPoints - (index * 8);
+                // Distanciamento no Grid de Largada
+                const gridOffset = (index * 6);
+                const initialProgress = (totalPathPoints - gridOffset + totalPathPoints) % totalPathPoints;
                 
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 group.setAttribute('class', 'driver-dot');
@@ -522,12 +545,15 @@
                 group.appendChild(text);
                 driversLayer.appendChild(group);
 
+                // Habilidade e Ritmo Médio
+                const skillMultiplier = 0.985 + (d.skill / 1000); 
+
                 return {
                     ...d,
-                    progress: (initialProgress + totalPathPoints) % totalPathPoints,
+                    progress: initialProgress,
                     lap: 1,
                     distanceTotal: initialProgress,
-                    baseSpeed: 0.85 + (d.skill / 1000),
+                    speedFactor: skillMultiplier,
                     tire: compounds[Math.floor(Math.random() * compounds.length)],
                     tireLife: 100,
                     pitStops: 0,
@@ -535,13 +561,14 @@
                     pitTimer: 0,
                     isDNF: false,
                     lastPos: index + 1,
+                    lapStartTime: 0,
                     element: group
                 };
             });
 
             updatePositions();
             renderLeaderboard();
-            addFeedItem("Luzes apagadas! A corrida começou em Spa-Francorchamps!", "normal");
+            addFeedItem("Sinais vermelhos acesos em Spa-Francorchamps... Largada dada!", "normal");
         }
 
         function updateStatusUI() {
@@ -591,12 +618,14 @@
                 const row = document.createElement('div');
                 row.className = `driver-row ${d.isDNF ? 'dnf' : ''}`;
 
-                let gapText = "LEADER";
+                let gapText = "LÍDER";
                 let intText = "—";
 
                 if (idx > 0 && !d.isDNF) {
-                    const gapDist = (leaderDist - d.distanceTotal) * 0.05;
-                    const intDist = (drivers[idx - 1].distanceTotal - d.distanceTotal) * 0.05;
+                    // Cálculo do GAP em segundos baseado na volta padrão de 97s
+                    const pointsPerSecond = totalPathPoints / BASE_LAP_TIME_SECONDS;
+                    const gapDist = (leaderDist - d.distanceTotal) / pointsPerSecond;
+                    const intDist = (drivers[idx - 1].distanceTotal - d.distanceTotal) / pointsPerSecond;
                     gapText = `+${gapDist.toFixed(1)}s`;
                     intText = `+${intDist.toFixed(1)}s`;
                 }
@@ -620,43 +649,54 @@
             });
         }
 
+        // Taxa de Acidentes Reduzida (Eventos Raros)
         function triggerRandomEvent() {
             if (trackStatus !== "CLEAR" || raceFinished) return;
             
-            const rand = Math.random();
-            if (rand < 0.003) { // 0.3% de chance por frame
+            // Probabilidade extremamente baixa por frame (~0.005% por frame)
+            if (Math.random() < 0.00005) { 
                 const activeDrivers = drivers.filter(d => !d.isDNF);
-                if (activeDrivers.length > 5) {
+                if (activeDrivers.length > 6) {
                     const victim = activeDrivers[Math.floor(Math.random() * activeDrivers.length)];
                     victim.isDNF = true;
                     
-                    const incidentRand = Math.random();
-                    if (incidentRand < 0.5) {
+                    if (Math.random() < 0.6) {
                         trackStatus = "SC";
-                        statusTimer = 250;
-                        addFeedItem(`ACIDENTE! ${victim.name} bateu. Safety Car acionado!`, "sc");
+                        statusTimer = 25; // Duração em segundos reais
+                        addFeedItem(`ACIDENTE! ${victim.name} abandonou a prova em Blanchimont. Safety Car acionado!`, "sc");
                     } else {
                         trackStatus = "VSC";
-                        statusTimer = 150;
-                        addFeedItem(`Incidente com ${victim.name}. Virtual Safety Car!`, "vsc");
+                        statusTimer = 15;
+                        addFeedItem(`Problemas com ${victim.name}. Virtual Safety Car (VSC) acionado!`, "vsc");
                     }
                     updateStatusUI();
                 }
             }
         }
 
-        function gameLoop() {
+        function formatLapTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(3);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function gameLoop(timestamp) {
             if (!simulationRunning) return;
+
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = (timestamp - lastTime) / 1000; // Tempo em segundos
+            lastTime = timestamp;
 
             simSpeed = parseFloat(speedSelect.value);
             const isWet = weatherSelect.value === "WET";
 
+            // Gestão dos Modos de Segurança (SC / VSC)
             if (statusTimer > 0) {
-                statusTimer -= 1 * simSpeed;
+                statusTimer -= deltaTime * simSpeed;
                 if (statusTimer <= 0) {
                     trackStatus = "CLEAR";
                     updateStatusUI();
-                    addFeedItem("Bandeira Verde! Pista liberada.", "normal");
+                    addFeedItem("Bandeira Verde! Corrida reiniciada em ritmo normal.", "normal");
                 }
             } else {
                 triggerRandomEvent();
@@ -664,56 +704,64 @@
 
             let leaderFinished = false;
 
+            // Velocidade Base em Pontos por Segundo para dar 1m37s (97s)
+            const basePointsPerSecond = totalPathPoints / BASE_LAP_TIME_SECONDS;
+
             drivers.forEach(d => {
                 if (d.isDNF) return;
 
-                // Lógica de Pit Stop
+                // Parada de Pit Stop
                 if (d.isPit) {
-                    d.pitTimer -= 1 * simSpeed;
+                    d.pitTimer -= deltaTime * simSpeed;
                     if (d.pitTimer <= 0) {
                         d.isPit = false;
                         d.tireLife = 100;
                         d.pitStops++;
                         const compounds = ['S', 'M', 'H'].filter(c => c !== d.tire);
                         d.tire = compounds[Math.floor(Math.random() * compounds.length)];
-                        addFeedItem(`${d.code} realizou pit stop e colocou pneus ${d.tire}.`, "pit");
+                        addFeedItem(`${d.code} concluiu o pit stop (Pneus ${d.tire}).`, "pit");
                     }
                     return;
                 }
 
-                // Cálculo de velocidade
-                let currentSpeed = d.baseSpeed;
+                // Cálculo de velocidade e desgaste
+                let currentFactor = d.speedFactor;
                 
-                // Desgaste de pneu
-                d.tireLife -= 0.02 * simSpeed;
-                if (d.tireLife < 30 && Math.random() < 0.05 && !d.isPit) {
+                d.tireLife -= 0.05 * deltaTime * simSpeed;
+                currentFactor *= (0.92 + (d.tireLife / 1250)); // Perda suave de rendimento por desgaste
+
+                if (isWet) currentFactor *= 0.82; // Desempenho no Molhado
+
+                // Desconto de velocidade por bandeira amarela / SC
+                if (trackStatus === "SC") currentFactor *= 0.45;
+                if (trackStatus === "VSC") currentFactor *= 0.65;
+
+                // Pits automáticos ao desgaste crítico
+                if (d.tireLife < 25 && !d.isPit && Math.random() < 0.02) {
                     d.isPit = true;
-                    d.pitTimer = 80; // Duração do pit stop em frames
+                    d.pitTimer = 22; // 22 segundos de tempo em pit stop (inclui desaceleração)
                 }
 
-                currentSpeed *= (0.85 + (d.tireLife / 200));
+                // Atualização da Posição
+                const step = basePointsPerSecond * currentFactor * deltaTime * simSpeed;
+                d.progress += step;
+                d.distanceTotal += step;
 
-                if (isWet) currentSpeed *= 0.75;
-
-                // Restrições de velocidade por bandeiras
-                if (trackStatus === "SC") currentSpeed *= 0.4;
-                if (trackStatus === "VSC") currentSpeed *= 0.6;
-
-                // Avanço na pista
-                d.progress += currentSpeed * simSpeed;
-                d.distanceTotal += currentSpeed * simSpeed;
-
-                // Troca de volta
+                // Verificação de Volta Completada
                 if (d.progress >= totalPathPoints) {
                     d.progress %= totalPathPoints;
                     d.lap++;
+
+                    // Registro de Tempo de Volta
+                    const estimatedLapSeconds = BASE_LAP_TIME_SECONDS / currentFactor;
+                    addFeedItem(`${d.code} completou a Volta ${d.lap - 1} (${formatLapTime(estimatedLapSeconds)})`, "normal");
 
                     if (d.lap > totalLaps) {
                         leaderFinished = true;
                     }
                 }
 
-                // Renderizar posição SVG
+                // Renderizar Posição dos Carros no SVG
                 const pointIndex = Math.floor(d.progress) % totalPathPoints;
                 const pt = trackPoints[pointIndex];
                 if (pt) {
@@ -721,14 +769,14 @@
                 }
             });
 
-            // Lógica de ultrapassagem e atualização de posições
+            // Atualização do Grid & Feed de Ultrapassagens
             const oldOrder = [...drivers];
             updatePositions();
 
             drivers.forEach((d, newPos) => {
                 const oldPos = oldOrder.findIndex(o => o.id === d.id);
-                if (oldPos > newPos && !d.isDNF && oldPos !== -1) {
-                    addFeedItem(`${d.code} ultrapassou ${oldOrder[newPos].code} e assumiu P${newPos + 1}!`, "overtake");
+                if (oldPos > newPos && !d.isDNF && oldPos !== -1 && trackStatus === "CLEAR") {
+                    addFeedItem(`${d.code} ultrapassou ${oldOrder[newPos].code} e assumiu a P${newPos + 1}!`, "overtake");
                 }
             });
 
@@ -739,14 +787,14 @@
                 raceFinished = true;
                 btnStart.textContent = "Corrida Finalizada";
                 btnStart.disabled = true;
-                addFeedItem(`BANDEIRA A QUADROS! Vencedor: ${drivers[0].name}!`, "normal");
+                addFeedItem(`🏁 BANDEIRA A QUADROS! Vencedor do GP de Spa: ${drivers[0].name}!`, "normal");
                 return;
             }
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Eventos dos Botões
+        // Controles dos Botões
         btnStart.addEventListener('click', () => {
             if (raceFinished) return;
 
@@ -755,6 +803,7 @@
                 btnStart.textContent = "Pausar";
                 btnStart.style.backgroundColor = "#ffb703";
                 btnStart.style.color = "#000";
+                lastTime = performance.now();
                 requestAnimationFrame(gameLoop);
             } else {
                 btnStart.textContent = "Continuar";
