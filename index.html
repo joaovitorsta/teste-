@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 2026 Advanced Simulation - Spa-Francorchamps Engine V2</title>
+    <title>F1 2026 Simulation - Spa-Francorchamps & Onboard POV</title>
     <style>
         :root {
             --bg-dark: #080a0f;
@@ -157,6 +157,15 @@
             border-right: 2px solid var(--border-color);
         }
 
+        .view-switch-bar {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            z-index: 15;
+            display: flex;
+            gap: 8px;
+        }
+
         svg#spa-circuit {
             width: 96%;
             height: 94%;
@@ -183,6 +192,23 @@
         .car-group { cursor: pointer; transition: transform 0.03s linear; }
         .car-circle { stroke: #ffffff; stroke-width: 1.5px; }
         .car-tag { font-size: 9px; font-weight: 900; fill: #ffffff; text-anchor: middle; dominant-baseline: central; text-shadow: 0 0 3px #000; }
+
+        /* ONBOARD CANVAS CONTAINER */
+        #onboard-view-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        #onboard-canvas {
+            width: 100%;
+            height: 100%;
+        }
 
         /* SIDEBAR (LEADERBOARD & TELEMETRY) */
         .sidebar {
@@ -418,7 +444,7 @@
     <header>
         <div class="brand-logo">
             <span class="f1-badge">F1</span>
-            <span class="header-title">Spa Telemetry Hub & V6 Hybrid Engine</span>
+            <span class="header-title">Spa Telemetry & Onboard Cockpit</span>
         </div>
 
         <div class="control-group">
@@ -446,7 +472,7 @@
             </div>
 
             <button class="btn-blue" id="btn-sound-toggle">🔊 V6 Engine: ON</button>
-            <button class="btn-blue" id="btn-run-quali">⚡ Simular Quali (Q1-Q3)</button>
+            <button class="btn-blue" id="btn-run-quali">⚡ Simular Quali</button>
             <button class="btn-red" id="btn-toggle-race">▶ Iniciar Corrida</button>
             <button class="btn-blue" id="btn-reset-all">🔄 Reset</button>
 
@@ -456,6 +482,11 @@
 
     <div class="workspace">
         <div class="track-panel">
+            <div class="view-switch-bar">
+                <button class="btn-blue" id="btn-view-map" style="background: #202c45; border-color: var(--accent-red);">🗺️ Mapa 2D</button>
+                <button class="btn-blue" id="btn-view-onboard">🎥 Vista Onboard (POV)</button>
+            </div>
+
             <svg id="spa-circuit" viewBox="0 0 1000 620">
                 <path class="track-layer-bg" id="svg-bg-track" d="" />
                 <path class="track-layer-asphalt" id="svg-main-track" d="" />
@@ -492,6 +523,10 @@
 
                 <g id="layer-cars"></g>
             </svg>
+
+            <div id="onboard-view-container">
+                <canvas id="onboard-canvas"></canvas>
+            </div>
         </div>
 
         <div class="sidebar">
@@ -565,7 +600,7 @@
     </div>
 
     <script>
-        // PONTOS DE CONTROLE DO CIRCUITO DE SPA-FRANCORCHAMPS
+        // PONTOS DE CONTROLE REAIS DO CIRCUITO DE SPA-FRANCORCHAMPS
         const spaControlPoints = [
             { x: 240, y: 480, turn: null },       // Linha de Chegada
             { x: 110, y: 525, turn: "01" },       // T1 - La Source
@@ -603,6 +638,7 @@
             { x: 250, y: 470, turn: null }
         ];
 
+        // CORREÇÃO CRÍTICA DO SPLINE: p3.y em vez de p3.x no termo de Y
         function generateSpline(pts, samples = 25) {
             const n = pts.length;
             let res = [];
@@ -618,7 +654,7 @@
                     const t3 = t2 * t;
 
                     const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-                    const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.x) * t3);
+                    const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
 
                     res.push({ x, y, turn: tIdx === 0 ? p1.turn : null });
                 }
@@ -702,10 +738,11 @@
         let raceFinished = false;
         let lastTime = 0;
         let audioEnabled = true;
+        let activeView = "MAP"; // "MAP" ou "ONBOARD"
 
-        const BASE_LAP_TIME = 96.0; // Target ~1m36s por volta
+        const BASE_LAP_TIME = 96.0;
 
-        // SINTETIZADOR WEB AUDIO API - V6 TURBO HYBRID ENGINE REALISTA
+        // SINTETIZADOR AUDIO V6 TURBO HYBRID
         let audioCtx = null;
         let engineOsc1 = null, engineOsc2 = null, turboOsc = null;
         let mainGain = null, filterNode = null;
@@ -714,18 +751,9 @@
             if (audioCtx) return;
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-                // Oscilador Principal V6 (Sawtooth para a explosão do cilindro)
-                engineOsc1 = audioCtx.createOscillator();
-                engineOsc1.type = 'sawtooth';
-
-                // Oscilador Harmônico V6 (Pulse/Square para corpo do exaustor)
-                engineOsc2 = audioCtx.createOscillator();
-                engineOsc2.type = 'square';
-
-                // Chiado MGU-K / Whine do Turbo (Sine Wave agudo)
-                turboOsc = audioCtx.createOscillator();
-                turboOsc.type = 'sine';
+                engineOsc1 = audioCtx.createOscillator(); engineOsc1.type = 'sawtooth';
+                engineOsc2 = audioCtx.createOscillator(); engineOsc2.type = 'square';
+                turboOsc = audioCtx.createOscillator(); turboOsc.type = 'sine';
 
                 filterNode = audioCtx.createBiquadFilter();
                 filterNode.type = 'lowpass';
@@ -734,60 +762,44 @@
                 mainGain = audioCtx.createGain();
                 mainGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
 
-                const gainOsc2 = audioCtx.createGain();
-                gainOsc2.gain.setValueAtTime(0.3, audioCtx.currentTime);
-
-                const gainTurbo = audioCtx.createGain();
-                gainTurbo.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                const gainOsc2 = audioCtx.createGain(); gainOsc2.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                const gainTurbo = audioCtx.createGain(); gainTurbo.gain.setValueAtTime(0.12, audioCtx.currentTime);
 
                 engineOsc1.connect(filterNode);
-                engineOsc2.connect(gainOsc2);
-                gainOsc2.connect(filterNode);
-                turboOsc.connect(gainTurbo);
-                gainTurbo.connect(mainGain);
+                engineOsc2.connect(gainOsc2); gainOsc2.connect(filterNode);
+                turboOsc.connect(gainTurbo); gainTurbo.connect(mainGain);
 
                 filterNode.connect(mainGain);
                 mainGain.connect(audioCtx.destination);
 
-                engineOsc1.start();
-                engineOsc2.start();
-                turboOsc.start();
+                engineOsc1.start(); engineOsc2.start(); turboOsc.start();
             } catch (e) {
-                console.log("Audio API não inicializada.");
+                console.log("Audio API desativada.");
             }
         }
 
-        // CÁLCULO DE GEAR & RPM DE F1
         const gearSpeedLimits = [0, 80, 125, 170, 215, 260, 295, 330, 370];
 
         function getGearAndRPM(speedKmh) {
             let gear = 1;
             for (let g = 1; g <= 8; g++) {
-                if (speedKmh <= gearSpeedLimits[g]) {
-                    gear = g;
-                    break;
-                }
+                if (speedKmh <= gearSpeedLimits[g]) { gear = g; break; }
                 gear = 8;
             }
             const minS = gearSpeedLimits[gear - 1];
             const maxS = gearSpeedLimits[gear];
             const ratio = Math.max(0, Math.min(1, (speedKmh - minS) / (maxS - minS || 1)));
-            const rpm = 5500 + (ratio * 8500); // Faixa de 5.500 RPM a 14.000 RPM
+            const rpm = 5500 + (ratio * 8500);
             return { gear, rpm };
         }
 
         function updateEngineAudio(speedKmh) {
             if (!audioCtx || !audioEnabled) return;
-
             const { rpm } = getGearAndRPM(speedKmh);
-            
-            // Frequência Fundamental do V6 4-Tempos = (RPM / 60) * (6 / 2) = RPM / 20
             const baseFreq = Math.max(40, rpm / 20);
-            
             engineOsc1.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.03);
             engineOsc2.frequency.setTargetAtTime(baseFreq * 0.5, audioCtx.currentTime, 0.03);
             turboOsc.frequency.setTargetAtTime(baseFreq * 4.5, audioCtx.currentTime, 0.05);
-
             filterNode.frequency.setTargetAtTime(Math.min(3500, baseFreq * 4), audioCtx.currentTime, 0.03);
         }
 
@@ -801,6 +813,32 @@
                 if (mainGain) mainGain.gain.setValueAtTime(0, audioCtx.currentTime);
                 e.target.textContent = "🔇 V6 Engine: OFF";
             }
+        });
+
+        // TROCA DE MODO DE VISTA (MAPA / ONBOARD)
+        const btnViewMap = document.getElementById('btn-view-map');
+        const btnViewOnboard = document.getElementById('btn-view-onboard');
+        const onboardContainer = document.getElementById('onboard-view-container');
+        const svgMap = document.getElementById('spa-circuit');
+
+        btnViewMap.addEventListener('click', () => {
+            activeView = "MAP";
+            onboardContainer.style.display = "none";
+            svgMap.style.display = "block";
+            btnViewMap.style.background = "#202c45";
+            btnViewMap.style.borderColor = "var(--accent-red)";
+            btnViewOnboard.style.background = "#1d263b";
+            btnViewOnboard.style.borderColor = "var(--border-color)";
+        });
+
+        btnViewOnboard.addEventListener('click', () => {
+            activeView = "ONBOARD";
+            svgMap.style.display = "none";
+            onboardContainer.style.display = "flex";
+            btnViewOnboard.style.background = "#202c45";
+            btnViewOnboard.style.borderColor = "var(--accent-red)";
+            btnViewMap.style.background = "#1d263b";
+            btnViewMap.style.borderColor = "var(--border-color)";
         });
 
         const layerCars = document.getElementById('layer-cars');
@@ -822,8 +860,7 @@
             const gridSource = gridOrder || grid2026;
 
             drivers = gridSource.map((d, idx) => {
-                // CORREÇÃO DO GRID: P1 (idx 0) FICA NA LINHA DE CHEGADA, P2 E DEMAIS RECUPERAM ATRÁS
-                const gridSpacing = 12; // Espaçamento de pontos entre carros
+                const gridSpacing = 12;
                 const initialProgress = (totalPoints - (idx * gridSpacing) + totalPoints) % totalPoints;
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -870,7 +907,7 @@
             updatePositions();
             renderLeaderboard();
             updateTelemetryUI();
-            addFeedMsg("Grid formado! Max Verstappen no P1 (Pole). Luzes apagadas em Spa!", "normal");
+            addFeedMsg("Grid reordenado! Max Verstappen no P1. Pista pronta em Spa!", "normal");
         }
 
         function selectDriver(id) {
@@ -954,6 +991,10 @@
 
             renderTelemetryCanvas(d);
             updateEngineAudio(d.speedKmh);
+
+            if (activeView === "ONBOARD") {
+                renderOnboardCanvas(d);
+            }
         }
 
         function renderTelemetryCanvas(d) {
@@ -963,7 +1004,6 @@
             cvs.height = cvs.clientHeight;
 
             ctx.clearRect(0, 0, cvs.width, cvs.height);
-
             if (!d.historySpeed || d.historySpeed.length < 2) return;
 
             ctx.beginPath();
@@ -980,6 +1020,152 @@
                 else ctx.lineTo(x, y);
             });
             ctx.stroke();
+        }
+
+        // RENDERIZADOR DEDICADO DE CÂMERA ONBOARD (COCKPIT POV)
+        let onboardOffset = 0;
+        function renderOnboardCanvas(d) {
+            const cvs = document.getElementById('onboard-canvas');
+            const ctx = cvs.getContext('2d');
+            cvs.width = onboardContainer.clientWidth;
+            cvs.height = onboardContainer.clientHeight;
+
+            const w = cvs.width;
+            const h = cvs.height;
+
+            const isWet = document.getElementById('sel-weather').value === "WET";
+
+            // Cálculo da curvatura atual do traçado
+            const currIdx = Math.floor(d.progress) % totalPoints;
+            const nextIdx = (currIdx + 15) % totalPoints;
+            const prevIdx = (currIdx - 15 + totalPoints) % totalPoints;
+
+            const dx = trackPoints[nextIdx].x - trackPoints[prevIdx].x;
+            const dy = trackPoints[nextIdx].y - trackPoints[prevIdx].y;
+            const curveAngle = Math.atan2(dy, dx);
+            
+            // Suavização do volante
+            const steerAngle = Math.sin(curveAngle * 2) * 0.45;
+
+            // Fundo: Céu e Pista
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.45);
+            if (isWet) {
+                skyGrad.addColorStop(0, '#1a2230');
+                skyGrad.addColorStop(1, '#3a485e');
+            } else {
+                skyGrad.addColorStop(0, '#0a2342');
+                skyGrad.addColorStop(1, '#2ca5e0');
+            }
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h * 0.45);
+
+            // Gramado / Barreira
+            ctx.fillStyle = isWet ? '#1c301c' : '#2b5020';
+            ctx.fillRect(0, h * 0.45, w, h * 0.55);
+
+            // Asfalto com Perspectiva 3D Trapezoidal
+            const horizonY = h * 0.45;
+            const curveOffset = Math.sin(curveAngle) * 180;
+
+            ctx.beginPath();
+            ctx.moveTo(w * 0.48 + curveOffset * 0.2, horizonY);
+            ctx.lineTo(w * 0.52 + curveOffset * 0.2, horizonY);
+            ctx.lineTo(w * 0.95, h);
+            ctx.lineTo(w * 0.05, h);
+            ctx.closePath();
+            ctx.fillStyle = '#1e2430';
+            ctx.fill();
+
+            // Animação de Faixas / Zebras (Kerbs)
+            onboardOffset += (d.speedKmh / 15);
+            const stripeCount = 12;
+            for (let i = 0; i < stripeCount; i++) {
+                const pos = ((i / stripeCount) + (onboardOffset % 100) / 100) % 1;
+                const py = horizonY + (pos * (h - horizonY));
+                const pwidth = 10 + pos * (w * 0.85);
+                const px = (w * 0.5) + (curveOffset * pos * 0.5);
+
+                ctx.fillStyle = (i % 2 === 0) ? '#ff1801' : '#ffffff';
+                ctx.fillRect(px - pwidth/2 - 12 * pos, py, 12 * pos, 4 * pos);
+                ctx.fillRect(px + pwidth/2, py, 12 * pos, 4 * pos);
+            }
+
+            // VOLANTE DE F1 (ESTRUTURA DENTRO DO COCKPIT)
+            ctx.save();
+            ctx.translate(w / 2, h * 0.82);
+            ctx.rotate(steerAngle);
+
+            // Base do Volante Carbono
+            ctx.fillStyle = '#11151c';
+            ctx.beginPath();
+            ctx.roundRect(-160, -90, 320, 170, 25);
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#28344d';
+            ctx.stroke();
+
+            // Empunhaduras Laterais (Grips)
+            ctx.fillStyle = '#080a0f';
+            ctx.beginPath();
+            ctx.roundRect(-175, -85, 30, 160, 15);
+            ctx.roundRect(145, -85, 30, 160, 15);
+            ctx.fill();
+
+            // TELA DIGITAL DO VOLANTE (DISPLAY DTM/F1)
+            ctx.fillStyle = '#040609';
+            ctx.fillRect(-85, -65, 170, 95);
+            ctx.strokeStyle = d.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-85, -65, 170, 95);
+
+            // Shift Lights (LEDs de Marcha)
+            const rpmRatio = (d.rpm - 5500) / 8500;
+            const totalLeds = 10;
+            for (let l = 0; l < totalLeds; l++) {
+                const ledX = -70 + (l * 15);
+                ctx.beginPath();
+                ctx.arc(ledX, -55, 4, 0, Math.PI * 2);
+                if (l / totalLeds <= rpmRatio) {
+                    ctx.fillStyle = l < 4 ? '#00ff66' : (l < 7 ? '#ff1801' : '#d633ff');
+                } else {
+                    ctx.fillStyle = '#1c263b';
+                }
+                ctx.fill();
+            }
+
+            // Dados na Tela do Volante
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 28px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`M${d.gear}`, 0, -15);
+
+            ctx.font = '800 16px monospace';
+            ctx.fillStyle = 'var(--accent-cyan)';
+            ctx.fillText(`${Math.round(d.speedKmh)} KM/H`, 0, 10);
+
+            ctx.font = '700 10px monospace';
+            ctx.fillStyle = d.drsActive ? '#00ff66' : '#8292a8';
+            ctx.fillText(d.drsActive ? 'DRS OPEN' : 'ERS HARVEST', 0, 24);
+
+            ctx.restore();
+
+            // ESTRUTURA DO HALO NA FRENTE DO PILOTO
+            ctx.fillStyle = '#080b12';
+            ctx.beginPath();
+            // Pilar Central do Halo
+            ctx.moveTo(w * 0.49, h);
+            ctx.lineTo(w * 0.51, h);
+            ctx.lineTo(w * 0.505, h * 0.35);
+            ctx.lineTo(w * 0.495, h * 0.35);
+            ctx.fill();
+
+            // Arco Superior do Halo
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(w, 0);
+            ctx.lineTo(w, h * 0.18);
+            ctx.quadraticCurveTo(w * 0.5, h * 0.4, 0, h * 0.18);
+            ctx.fill();
         }
 
         function updateFlagUI() {
@@ -1060,11 +1246,11 @@
             document.getElementById('modal-quali').classList.remove('active');
             if (window.qualiGridOrder) {
                 initSimulation(window.qualiGridOrder);
-                addFeedMsg("Grid oficial redefinido pelas sessões Q1-Q3!", "normal");
+                addFeedMsg("Grid redefinido pelos resultados da classificação!", "normal");
             }
         });
 
-        // LOOP DE CORRIDA COM ULTRAPASSAGENS E PIT STOPS DINÂMICOS
+        // LOOP PRINCIPAL DE CORRIDA
         function raceLoop(timestamp) {
             if (!isRunning) return;
 
@@ -1084,7 +1270,7 @@
                     trackFlag = "SC";
                     flagTimer = 16;
                     updateFlagUI();
-                    addFeedMsg(`Bandeira Vermelha/SC! ${victim.name} escapou na Pouhon!`, "sc");
+                    addFeedMsg(`Bandeira Vermelha/SC! ${victim.name} rodou na curva Pouhon!`, "sc");
                 }
             }
 
@@ -1093,13 +1279,13 @@
                 if (flagTimer <= 0) {
                     trackFlag = "GREEN";
                     updateFlagUI();
-                    addFeedMsg("Pista Limpa! Safety Car recolhido.", "normal");
+                    addFeedMsg("Pista Limpa! Corrida reiniciada.", "normal");
                 }
             }
 
             const basePtsPerSec = totalPoints / BASE_LAP_TIME;
 
-            // FÍSICA E MOVIMENTAÇÃO DE CADA CARRO
+            // FÍSICA E MOVIMENTAÇÃO DOS CARROS
             drivers.forEach((d, rank) => {
                 if (d.isDNF) return;
 
@@ -1108,26 +1294,24 @@
                 // Lógica de Pit Stop
                 if (d.isPit) {
                     d.pitTimer -= deltaTime * simSpeed;
-                    d.speedKmh = 80; // Limite de Pit Lane
+                    d.speedKmh = 80;
                     if (d.pitTimer <= 0) {
                         d.isPit = false;
                         d.tireWear = 100;
                         d.tire = isWet ? 'I' : (Math.random() > 0.5 ? 'M' : 'H');
-                        addFeedMsg(`PIT STOP COMPLETO: ${d.code} trocou pneus para [${d.tire}] em 2.4s!`, "pit");
+                        addFeedMsg(`PIT STOP COMPLETO: ${d.code} trocou para [${d.tire}] em 2.4s!`, "pit");
                     }
                 } else {
-                    // Verificação de Entrada para o Box
                     if (d.tireWear < 28 && currentIdx >= PIT_ENTRANCE && currentIdx <= PIT_ENTRANCE + 35) {
                         d.isPit = true;
-                        d.pitTimer = 6.5; // Duração do Pit Lane + Troca
-                        addFeedMsg(`${d.code} entrou nos boxes (Pneus desgastados: ${Math.round(d.tireWear)}%).`, "pit");
+                        d.pitTimer = 6.5;
+                        addFeedMsg(`${d.code} entrou nos boxes (Desgaste: ${Math.round(d.tireWear)}%).`, "pit");
                     }
                 }
 
-                // Cálculo do Fator de Velocidade
                 let factor = d.baseSpeedFactor;
                 d.tireWear -= 0.035 * deltaTime * simSpeed;
-                
+
                 if (d.tireWear < 30) factor *= 0.91;
                 if (isWet && d.tire !== 'I') factor *= 0.82;
                 if (trackFlag === "SC") factor *= 0.45;
@@ -1137,14 +1321,13 @@
                 if (rank > 0 && !d.isPit) {
                     const carAhead = drivers[rank - 1];
                     const distGap = carAhead.distanceTotal - d.distanceTotal;
-                    
-                    if (distGap > 0 && distGap < 22) { // Menos de ~0.8s atrás
+
+                    if (distGap > 0 && distGap < 22) {
                         d.slipstreamActive = true;
-                        factor *= 1.12; // Bônus de 12% em velocidade pelo vácuo
-                        
-                        // Executar Ultrapassagem se for em reta e tiver maior fator
+                        factor *= 1.12;
+
                         if (distGap < 4 && factor > carAhead.baseSpeedFactor) {
-                            addFeedMsg(`ULTRAPASSAGEM! ${d.code} superou ${carAhead.code} na reta!`, "overtake");
+                            addFeedMsg(`ULTRAPASSAGEM! ${d.code} superou ${carAhead.code} em Kemmel!`, "overtake");
                         }
                     }
                 }
@@ -1153,12 +1336,11 @@
                 d.drsActive = (currentIdx >= DRS1_START && currentIdx <= DRS1_END) || (currentIdx >= DRS2_START || currentIdx <= DRS2_END);
                 if (d.drsActive && !isWet) factor *= 1.08;
 
-                // Perfil de Curvas x Retas de Spa
                 let mapSpeed = 285;
                 if ((currentIdx >= 40 && currentIdx <= 85) || (currentIdx >= 780 && currentIdx <= 820)) {
-                    mapSpeed = 90; // La Source & Bus Stop
+                    mapSpeed = 90;
                 } else if (currentIdx >= 140 && currentIdx <= 210) {
-                    mapSpeed = 345; // Kemmel Straight
+                    mapSpeed = 345;
                 }
 
                 if (!d.isPit) {
@@ -1169,17 +1351,14 @@
                 d.gear = gRpm.gear;
                 d.rpm = gRpm.rpm;
 
-                // Avanço de Posição
                 const step = basePtsPerSec * factor * deltaTime * simSpeed;
                 d.progress += step;
                 d.distanceTotal += step;
 
-                // Histórico de Telemetria
                 if (!d.historySpeed) d.historySpeed = [];
                 d.historySpeed.push(d.speedKmh);
                 if (d.historySpeed.length > 60) d.historySpeed.shift();
 
-                // Completa Volta
                 if (d.progress >= totalPoints) {
                     d.progress %= totalPoints;
                     d.lap++;
@@ -1192,7 +1371,6 @@
                     if (d.lap > totalLaps) raceFinished = true;
                 }
 
-                // Renderizar Posição no SVG
                 const pt = trackPoints[Math.floor(d.progress) % totalPoints];
                 if (pt) {
                     d.element.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
@@ -1214,7 +1392,7 @@
             requestAnimationFrame(raceLoop);
         }
 
-        // EVENTOS DE CONTROLE
+        // CONTROLES DE INTERFACE
         btnToggleRace.addEventListener('click', () => {
             if (raceFinished) return;
             initAudio();
@@ -1238,7 +1416,7 @@
             initSimulation();
         });
 
-        // Startup
+        // Inicialização
         initSimulation();
     </script>
 </body>
